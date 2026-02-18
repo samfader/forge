@@ -101,20 +101,27 @@ public class TrackableTypes {
             TrackableCollection<T> newCollection = from.get(prop);
             if (newCollection != null) {
                 //swap in objects in old collection for objects in new collection
-                for (int i = 0; i < newCollection.size(); i++) {
+                // Iterate backwards to avoid index issues when removing elements
+                for (int i = newCollection.size() - 1; i >= 0; i--) {
                     try {
+                        if (i >= newCollection.size()) {
+                            // Skip if collection size changed
+                            continue;
+                        }
                         T newObj = newCollection.get(i);
                         if (newObj != null) {
                             T existingObj = from.getTracker().getObj(itemType, newObj.getId());
                             if (existingObj != null) {  //fix cards with alternate state/ manifest/ morph/ adventure etc...
                                 if (prop.getType() == TrackableTypes.CardViewCollectionType ||
                                         prop.getType() == TrackableTypes.StackItemViewListType) {
-                                    newCollection.remove(i);
-                                    newCollection.add(i, newObj);
+                                    if (i < newCollection.size()) {
+                                        newCollection.set(i, newObj);
+                                    }
                                 } else { //if object exists already, update its changed properties
                                     existingObj.copyChangedProps(newObj);
-                                    newCollection.remove(i);
-                                    newCollection.add(i, existingObj);
+                                    if (i < newCollection.size()) {
+                                        newCollection.set(i, existingObj);
+                                    }
                                 }
                             }
                             else { //if object is new, cache in object lookup
@@ -122,7 +129,7 @@ public class TrackableTypes {
                             }
                         }
                     } catch (IndexOutOfBoundsException e) {
-                        System.err.println("got an IndexOutOfBoundsException, trying to continue ...");
+                        System.err.println("Collection was modified during iteration at index " + i + ", size is now " + newCollection.size());
                     }
                 }
             }

@@ -10,59 +10,85 @@ import forge.trackable.TrackableTypes.TrackableType;
 
 public class Tracker {
     private int freezeCounter = 0;
+    private final Object freezeLock = new Object();  // Lock for freeze operations
     private final List<DelayedPropChange> delayedPropChanges = Lists.newArrayList();
 
     private final Table<TrackableType<?>, Integer, Object> objLookups = HashBasedTable.create();
 
     public final boolean isFrozen() {
-        return freezeCounter > 0;
+        synchronized (freezeLock) {
+            return freezeCounter > 0;
+        }
     }
 
     public void freeze() {
-        freezeCounter++;
+        synchronized (freezeLock) {
+            freezeCounter++;
+        }
     }
 
     // Note: objLookups exist on the tracker and not on the TrackableType because
     // TrackableType is global and Tracker is per game.
     @SuppressWarnings("unchecked")
     public <T> T getObj(TrackableType<T> type, Integer id) {
-        return (T)objLookups.get(type, id);
+        synchronized (objLookups) {
+            return (T)objLookups.get(type, id);
+        }
     }
 
     public boolean hasObj(TrackableType<?> type, Integer id) {
-        return objLookups.contains(type, id);
+        synchronized (objLookups) {
+            return objLookups.contains(type, id);
+        }
     }
 
     public <T> void putObj(TrackableType<T> type, Integer id, T val) {
-        objLookups.put(type, id, val);
+        synchronized (objLookups) {
+            objLookups.put(type, id, val);
+        }
     }
 
     public void unfreeze() {
-        if (!isFrozen() || --freezeCounter > 0 || delayedPropChanges.isEmpty()) {
-            return;
+        synchronized (freezeLock) {
+            if (!isFrozen() || --freezeCounter > 0) {
+                return;
+            }
         }
-        //after being unfrozen, ensure all changes delayed during freeze are now applied
-        for (final DelayedPropChange change : delayedPropChanges) {
-            change.object.set(change.prop, change.value);
+
+        // Process delayed changes outside of lock to avoid deadlocks
+        synchronized (delayedPropChanges) {
+            if (delayedPropChanges.isEmpty()) {
+                return;
+            }
+            //after being unfrozen, ensure all changes delayed during freeze are now applied
+            for (final DelayedPropChange change : delayedPropChanges) {
+                change.object.set(change.prop, change.value);
+            }
+            delayedPropChanges.clear();
         }
-        delayedPropChanges.clear();
     }
 
     public void flush() {
         // unfreeze and refreeze the tracker in order to flush current pending properties
-        if (!isFrozen()) {
-            return;
+        synchronized (freezeLock) {
+            if (freezeCounter == 0) {
+                return;
+            }
         }
         unfreeze();
         freeze();
     }
 
     public void addDelayedPropChange(final TrackableObject object, final TrackableProperty prop, final Object value) {
-        delayedPropChanges.add(new DelayedPropChange(object, prop, value));
+        synchronized (delayedPropChanges) {
+            delayedPropChanges.add(new DelayedPropChange(object, prop, value));
+        }
     }
 
     public void clearDelayed() {
-        delayedPropChanges.clear();
+        synchronized (delayedPropChanges) {
+            delayedPropChanges.clear();
+        }
     }
 
     private class DelayedPropChange {

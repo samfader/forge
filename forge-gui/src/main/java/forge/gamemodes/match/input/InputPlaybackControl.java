@@ -50,7 +50,7 @@ public class InputPlaybackControl extends InputSyncronizedBase {
         } else {
             getController().getGui().updateButtons(null, "Pause", speed.nextSpeedText(), true, true, true);
         }
-        getController().getGui().setGamePause(isPaused);
+        getController().getGui().setgamePause(isPaused);
     }
 
     public void pause() {

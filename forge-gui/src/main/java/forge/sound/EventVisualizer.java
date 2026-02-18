@@ -2,7 +2,6 @@ package forge.sound;
 
 import forge.LobbyPlayer;
 import forge.game.card.Card;
-import forge.game.card.CardView;
 import forge.game.card.CardView.CardStateView;
 import forge.game.event.*;
 import forge.game.zone.ZoneType;
@@ -40,8 +39,8 @@ public class EventVisualizer extends IGameEventVisitor.Base<SoundEffectType> imp
     public SoundEffectType visit(final GameEventCardAttachment event) { return SoundEffectType.Equip; }
     @Override
     public SoundEffectType visit(final GameEventCardChangeZone event) {
-        final ZoneType from = event.from() != null ? event.from().zoneType() : null;
-        final ZoneType to = event.to() != null ? event.to().zoneType() : null;
+        final ZoneType from = event.from() == null ? null : event.from().getZoneType();
+        final ZoneType to = event.to().getZoneType();
         if( from == ZoneType.Library && to == ZoneType.Hand) {
             return SoundEffectType.Draw;
         }
@@ -95,7 +94,7 @@ public class EventVisualizer extends IGameEventVisitor.Base<SoundEffectType> imp
     }
     @Override
     public SoundEffectType visit(final GameEventBlockersDeclared event) {
-        final boolean isLocalHuman = event.defendingPlayer().isLobbyPlayer(player);
+        final boolean isLocalHuman = Objects.equals(event.defendingPlayer().getLobbyPlayer(), player);
         if (isLocalHuman) {
             return null; // already played sounds in interactive mode
         }
@@ -112,7 +111,7 @@ public class EventVisualizer extends IGameEventVisitor.Base<SoundEffectType> imp
      */
     @Override
     public SoundEffectType visit(final GameEventGameOutcome event) {
-        final boolean humanWonTheDuel = Objects.equals(event.winningPlayerName(), player.getName());
+        final boolean humanWonTheDuel = Objects.equals(event.result().getWinningLobbyPlayer(), player);
         return humanWonTheDuel ? SoundEffectType.WinDuel : SoundEffectType.LoseDuel;
     }
 
@@ -126,7 +125,7 @@ public class EventVisualizer extends IGameEventVisitor.Base<SoundEffectType> imp
             return null;
         }
 
-        final CardView source = evt.spell().getHostCard();
+        final Card source = evt.spell().getHostCard();
         if (evt.spell().isSpell()) {
             // if there's a specific effect for this particular card, play it and
             // we're done.
@@ -134,20 +133,19 @@ public class EventVisualizer extends IGameEventVisitor.Base<SoundEffectType> imp
                 return SoundEffectType.ScriptedEffect;
             }
 
-            CardView.CardStateView state = source.getCurrentState();
-            if (state.isCreature() && state.isArtifact()) {
+            if (source.isCreature() && source.isArtifact()) {
                 return SoundEffectType.ArtifactCreature;
-            } else if (state.isCreature()) {
+            } else if (source.isCreature()) {
                 return SoundEffectType.Creature;
-            } else if (state.isArtifact()) {
+            } else if (source.isArtifact()) {
                 return SoundEffectType.Artifact;
-            } else if (state.isInstant()) {
+            } else if (source.isInstant()) {
                 return SoundEffectType.Instant;
-            } else if (state.isPlaneswalker()) {
+            } else if (source.isPlaneswalker()) {
                 return SoundEffectType.Planeswalker;
-            } else if (state.isSorcery()) {
+            } else if (source.isSorcery()) {
                 return SoundEffectType.Sorcery;
-            } else if (state.isEnchantment()) {
+            } else if (source.isEnchantment()) {
                 return SoundEffectType.Enchantment;
             }
         }
@@ -182,16 +180,16 @@ public class EventVisualizer extends IGameEventVisitor.Base<SoundEffectType> imp
 
     @Override
     public SoundEffectType visit(GameEventZone event) {
-        CardView card = event.card();
+        Card card = event.card();
         ZoneType zoneTo = event.zoneType();
         EventValueChangeType zoneEventMode = event.mode();
-        if (zoneEventMode != EventValueChangeType.Added || zoneTo != ZoneType.Battlefield || !card.getCurrentState().isLand()) {
+        if (zoneEventMode != EventValueChangeType.Added || zoneTo != ZoneType.Battlefield || !card.isLand()) {
             return null;
         }
         if (hasSpecificCardEffect(card)) {
             return SoundEffectType.ScriptedEffect;
         }
-        CardStateView state = card.getCurrentState();
+        CardStateView state = card.getView().getCurrentState();
         SoundEffectType resultSound = switch(state.origProduceMana()) {
             case W -> SoundEffectType.WhiteLand;
             case U -> SoundEffectType.BlueLand;
@@ -242,25 +240,15 @@ public class EventVisualizer extends IGameEventVisitor.Base<SoundEffectType> imp
             if (c.hasSVar("SoundEffect")) {
                 effect = c.getSVar("SoundEffect");
             } else {
-                effect = soundEffectNameFromCardName(c.getName());
+                effect = TextUtil.fastReplace(TextUtil.fastReplace(
+                        TextUtil.fastReplace(c.getName(), ",", ""),
+                        " ", "_"), "'", "").toLowerCase();
+
             }
         }
 
         // Only proceed if the file actually exists
         return SoundSystem.instance.getSoundResource(effect) != null;
-    }
-
-    private static boolean hasSpecificCardEffect(final CardView c) {
-        if (null == c) { return false; }
-        // CardView doesn't have SVar access, so check by card name only
-        String effect = soundEffectNameFromCardName(c.getName());
-        return SoundSystem.instance.getSoundResource(effect) != null;
-    }
-
-    private static String soundEffectNameFromCardName(String name) {
-        return TextUtil.fastReplace(TextUtil.fastReplace(
-                TextUtil.fastReplace(name, ",", ""),
-                " ", "_"), "'", "").toLowerCase();
     }
 
 
@@ -273,24 +261,27 @@ public class EventVisualizer extends IGameEventVisitor.Base<SoundEffectType> imp
      * SVar:SoundEffect does not exist.
      */
     public String getScriptedSoundEffectName(final GameEvent evt) {
-        String cardName = null;
+        Card c = null;
 
         if (evt instanceof GameEventSpellResolved evSpell) {
-            CardView hostCard = evSpell.spell().getHostCard();
-            if (hostCard != null) {
-                cardName = hostCard.getName();
-            }
+            c = evSpell.spell().getHostCard();
         } else if (evt instanceof GameEventZone evZone) {
-            if (evZone.zoneType() == ZoneType.Battlefield && evZone.mode() == EventValueChangeType.Added
-                    && evZone.card() != null && evZone.card().getCurrentState().isLand()) {
-                cardName = evZone.card().getName();
+            if (evZone.zoneType() == ZoneType.Battlefield && evZone.mode() == EventValueChangeType.Added && evZone.card().isLand()) {
+                c = evZone.card(); // assuming a land is played or otherwise put on the battlefield
             }
         }
 
-        if (cardName != null) {
-            return soundEffectNameFromCardName(cardName);
+        if (c == null) {
+            return "";
+        } else {
+            if (c.hasSVar("SoundEffect")) {
+                return c.getSVar("SoundEffect");
+            } else {
+                return TextUtil.fastReplace(TextUtil.fastReplace(
+                        TextUtil.fastReplace(c.getName(), ",", ""),
+                        " ", "_"), "'", "").toLowerCase();
+            }
         }
-        return "";
     }
 
 

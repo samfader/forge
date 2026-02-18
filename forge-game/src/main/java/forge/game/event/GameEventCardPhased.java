@@ -1,8 +1,8 @@
 package forge.game.event;
 
-import forge.game.card.CardView;
+import forge.game.card.Card;
 
-public record GameEventCardPhased(CardView card, boolean phaseState) implements GameEvent {
+public record GameEventCardPhased(Card card, boolean phaseState) implements GameEvent {
 
     @Override
     public <T> T visit(IGameEventVisitor<T> visitor) {

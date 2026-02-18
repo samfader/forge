@@ -1,8 +1,6 @@
 package forge.game.event;
 
-import java.io.Serializable;
-
-public interface GameEvent extends Event, Serializable {
+public interface GameEvent extends Event {
 
     public abstract <T> T visit(IGameEventVisitor<T> visitor);
 }

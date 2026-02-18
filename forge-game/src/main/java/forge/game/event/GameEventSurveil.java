@@ -1,8 +1,8 @@
 package forge.game.event;
 
-import forge.game.player.PlayerView;
+import forge.game.player.Player;
 
-public record GameEventSurveil(PlayerView player, int toLibrary, int toGraveyard) implements GameEvent {
+public record GameEventSurveil(Player player, int toLibrary, int toGraveyard) implements GameEvent {
 
     @Override
     public <T> T visit(IGameEventVisitor<T> visitor) {

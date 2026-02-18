@@ -1,13 +1,8 @@
 package forge.game.event;
 
 import forge.game.card.Card;
-import forge.game.card.CardView;
 
-public record GameEventCardTapped(CardView card, boolean tapped) implements GameEvent {
-
-    public GameEventCardTapped(Card card, boolean tapped) {
-        this(CardView.get(card), tapped);
-    }
+public record GameEventCardTapped(Card card, boolean tapped) implements GameEvent {
 
     @Override
     public <T> T visit(IGameEventVisitor<T> visitor) {

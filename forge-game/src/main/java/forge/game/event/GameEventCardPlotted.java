@@ -1,15 +1,9 @@
 package forge.game.event;
 
 import forge.game.card.Card;
-import forge.game.card.CardView;
 import forge.game.player.Player;
-import forge.game.player.PlayerView;
 
-public record GameEventCardPlotted(CardView card, PlayerView activatingPlayer) implements GameEvent {
-
-    public GameEventCardPlotted(Card card, Player activatingPlayer) {
-        this(CardView.get(card), PlayerView.get(activatingPlayer));
-    }
+public record GameEventCardPlotted(Card card, Player activatingPlayer) implements GameEvent {
 
     @Override
     public <T> T visit(IGameEventVisitor<T> visitor) {
@@ -21,6 +15,6 @@ public record GameEventCardPlotted(CardView card, PlayerView activatingPlayer) i
      */
     @Override
     public String toString() {
-        return activatingPlayer.toString() + " has plotted " + (card != null ? card.toString() : "(unknown)");
+        return activatingPlayer.getName() + " has plotted " + (card != null ? card.toString() : "(unknown)");
     }
 }

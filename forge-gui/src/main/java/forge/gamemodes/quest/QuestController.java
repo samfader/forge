@@ -27,11 +27,9 @@ import com.google.common.eventbus.Subscribe;
 import forge.card.CardEdition;
 import forge.deck.Deck;
 import forge.deck.DeckGroup;
-import forge.game.Game;
 import forge.game.GameFormat;
 import forge.game.event.GameEvent;
 import forge.game.event.GameEventMulligan;
-import forge.game.player.Player;
 import forge.gamemodes.quest.bazaar.QuestBazaarManager;
 import forge.gamemodes.quest.bazaar.QuestItemType;
 import forge.gamemodes.quest.bazaar.QuestPetStorage;
@@ -56,7 +54,6 @@ import forge.util.storage.StorageBase;
  *
  */
 public class QuestController {
-    private Game activeGame;
     private QuestData model;
     // gadgets
 
@@ -548,18 +545,14 @@ public class QuestController {
         return unlocksAvaliable > unlocksSpent ? Math.min(unlocksAvaliable - unlocksSpent, cntLocked) : 0;
     }
 
-    public void setActiveGame(Game game) {
-        this.activeGame = game;
-    }
-
     @Subscribe
     public void receiveGameEvent(GameEvent ev) { // Receives events only during quest games
-        if (ev instanceof GameEventMulligan mev && activeGame != null) {
+        if (ev instanceof GameEventMulligan) {
+            GameEventMulligan mev = (GameEventMulligan) ev;
             // First mulligan is free
-            Player player = activeGame.getPlayer(mev.player());
-            if (player != null && player.getLobbyPlayer().equals(GamePlayerUtil.getGuiPlayer())
-                    && getAssets().hasItem(QuestItemType.SLEIGHT) && player.getStats().getMulliganCount() < 7) {
-                player.drawCard();
+            if (mev.player().getLobbyPlayer().equals(GamePlayerUtil.getGuiPlayer())
+                    && getAssets().hasItem(QuestItemType.SLEIGHT) && mev.player().getStats().getMulliganCount() < 7) {
+                mev.player().drawCard();
             }
         }
     }

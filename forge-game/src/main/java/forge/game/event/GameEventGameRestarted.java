@@ -1,8 +1,8 @@
 package forge.game.event;
 
-import forge.game.player.PlayerView;
+import forge.game.player.Player;
 
-public record GameEventGameRestarted(PlayerView whoRestarted) implements GameEvent {
+public record GameEventGameRestarted(Player whoRestarted) implements GameEvent {
 
     @Override
     public <T> T visit(IGameEventVisitor<T> visitor) {

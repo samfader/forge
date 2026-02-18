@@ -70,5 +70,8 @@ public final class ServerGameLobby extends GameLobby {
 
     @Override
     protected void onGameStarted() {
+        // Adjust network timeouts based on number of players
+        // With 3+ players, we need more generous timeouts to prevent timeout failures
+        FServerManager.getInstance().adjustTimeoutsForPlayerCount();
     }
 }

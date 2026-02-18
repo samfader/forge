@@ -1,8 +1,8 @@
 package forge.game.event;
 
-import forge.game.player.PlayerView;
+import forge.game.player.Player;
 
-public record GameEventMulligan(PlayerView player) implements GameEvent {
+public record GameEventMulligan(Player player) implements GameEvent {
 
     @Override
     public <T> T visit(IGameEventVisitor<T> visitor) {

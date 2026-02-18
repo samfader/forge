@@ -225,6 +225,10 @@ public class PlayerProperty {
             if (!found) {
                 return false;
             }
+        } else if (property.equals("IsNotRemembered")) {
+            if (source.isRemembered(player)) {
+                return false;
+            }
         } else if (property.equals("IsTriggerRemembered")) {
             boolean found = false;
             for (Object o : spellAbility.getTriggerRemembered()) {
@@ -429,6 +433,10 @@ public class PlayerProperty {
                 if (!lowestlifep.contains(player)) {
                     return false;
                 }
+            }
+        } else if (property.startsWith("LessThanHalfStartingLifeTotal")) {
+            if (player.getLife() >= (int) Math.ceil(player.getStartingLife() / 2.0)) {
+                return false;
             }
         } else if (property.startsWith("Triggered") || property.equals("OriginalHostRemembered")) {
             if (!AbilityUtils.getDefinedPlayers(source, property, spellAbility).contains(player)) {

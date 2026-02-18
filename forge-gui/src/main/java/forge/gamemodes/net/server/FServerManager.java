@@ -249,11 +249,44 @@ public final class FServerManager {
         broadcast(event);
     }
 
+    /**
+     * Adjust network timeouts based on number of active players.
+     * Should be called when a match starts to ensure sufficient timeout for all players.
+     */
+    public void adjustTimeoutsForPlayerCount() {
+        if (localLobby == null) {
+            return;
+        }
+
+        // Count active players
+        int playerCount = 0;
+        for (int i = 0; i < localLobby.getNumberOfSlots(); i++) {
+            LobbySlot slot = localLobby.getSlot(i);
+            if (slot.getType() == LobbySlotType.LOCAL || slot.getType() == LobbySlotType.REMOTE) {
+                playerCount++;
+            }
+        }
+
+        // Set timeout multiplier for each client
+        // With 3+ players, we need more generous timeouts
+        int timeoutMultiplier = Math.max(1, playerCount);
+        for (final RemoteClient client : clients.values()) {
+            client.getReplyPool().setTimeoutMultiplier(timeoutMultiplier);
+            System.out.println("Set timeout multiplier to " + timeoutMultiplier + " for player " + client.getUsername());
+        }
+    }
+
     public void updateSlot(final int index, final UpdateLobbyPlayerEvent event) {
         localLobby.applyToSlot(index, event);
 
         if (event.getReady() != null) {
             broadcastReadyState(localLobby.getSlot(index).getName(), event.getReady());
+        }
+
+        // IMPORTANT: After applying any slot update, broadcast the new lobby state
+        // This ensures name changes, avatar changes, etc. are sent to all players
+        if (event.getName() != null || event.getAvatarIndex() != -1 || event.getSleeveIndex() != -1 || event.getType() != null) {
+            updateLobbyState();
         }
     }
 
@@ -551,12 +584,21 @@ public final class FServerManager {
                     return; // Suppress slash commands from remote clients
                 }
                 final RemoteClient client = clients.get(ctx.channel());
-                String username = client.getUsername();
-                // Append (Host) indicator for the host player
-                if (client.getIndex() == 0) {
-                    username = username + " (Host)";
+                if (client != null) {
+                    String username = client.getUsername();
+                    // Only broadcast if username is set (client has completed login)
+                    if (username != null) {
+                        // Append (Host) indicator for the host player
+                        if (client.getIndex() == 0) {
+                            username = username + " (Host)";
+                        }
+                        broadcast(new MessageEvent(username, text));
+                    } else {
+                        System.err.println("MessageHandler: username is null for client on channel " + ctx.channel().remoteAddress());
+                    }
+                } else {
+                    System.err.println("MessageHandler: client is null for channel " + ctx.channel().remoteAddress());
                 }
-                broadcast(new MessageEvent(username, text));
             }
             super.channelRead(ctx, msg);
         }
@@ -578,27 +620,19 @@ public final class FServerManager {
             if (msg instanceof LoginEvent event) {
                 final String username = event.getUsername();
                 client.setUsername(username);
+                client.setConnectionState(RemoteClient.ConnectionState.CONNECTED);
                 if (client.getIndex() == 0) {
                     broadcast(new MessageEvent(String.format("Lobby hosted by %s.", username)));
                 } else {
                     broadcast(new MessageEvent(String.format("%s joined the lobby.", username)));
                 }
                 updateLobbyState();
-            } else if (msg instanceof UpdateLobbyPlayerEvent event) {
-                localLobby.applyToSlot(client.getIndex(), event);
-                if (event.getName() != null) {
-                    String oldName = client.getUsername();
-                    String newName = event.getName();
-                    if (!newName.equals(oldName)) {
-                        client.setUsername(newName);
-                        broadcast(new MessageEvent(String.format("%s changed their name to %s", oldName, newName)));
-                    }
-                }
-                if (event.getReady() != null) {
-                    broadcastReadyState(client.getUsername(), event.getReady());
-                }
-                // Return to prevent duplicate processing by LobbyInputHandler
-                return;
+            } else if (msg instanceof UpdateLobbyPlayerEvent) {
+                // IMPORTANT: Do NOT process UpdateLobbyPlayerEvent here!
+                // The client.getIndex() is not yet assigned at this point.
+                // Let LobbyInputHandler process it instead (which is called after index is assigned).
+                // This was causing player names to be applied to wrong slots with 3+ players.
+                // DO NOT return here - we must call super.channelRead() to propagate the event!
             }
             super.channelRead(ctx, msg);
         }
@@ -660,6 +694,15 @@ public final class FServerManager {
                     }
                 }
             } else if (msg instanceof UpdateLobbyPlayerEvent event) {
+                // Handle name changes - update RemoteClient username too
+                if (event.getName() != null) {
+                    String oldName = client.getUsername();
+                    String newName = event.getName();
+                    if (!newName.equals(oldName)) {
+                        client.setUsername(newName);
+                        broadcast(new MessageEvent(String.format("%s changed their name to %s", oldName, newName)));
+                    }
+                }
                 updateSlot(client.getIndex(), event);
             }
             // Note: MessageEvent is handled by MessageHandler, not here
@@ -712,11 +755,13 @@ public final class FServerManager {
                     String.format("%s disconnected. Waiting %s for reconnect...", username, formatTime(RECONNECT_TIMEOUT_SECONDS))));
                 lobbyListener.message(null, "(Host can use /skipreconnect to replace disconnected player with AI, or /skiptimeout to wait indefinitely.)");
                 System.out.println("Player disconnected mid-game: " + username + " (slot " + client.getIndex() + "). Waiting for reconnect.");
+                client.setConnectionState(RemoteClient.ConnectionState.RECONNECTING);
             } else {
                 // Normal disconnect (lobby or no valid slot)
                 localLobby.disconnectPlayer(client.getIndex());
                 broadcast(new MessageEvent(String.format("%s left the lobby.", username)));
                 broadcast(new LogoutEvent(username));
+                client.setConnectionState(RemoteClient.ConnectionState.DISCONNECTED);
             }
             super.channelInactive(ctx);
         }

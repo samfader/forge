@@ -6,6 +6,7 @@ import forge.game.*;
 import forge.game.player.PlayerView;
 import forge.game.player.RegisteredPlayer;
 import forge.gamemodes.match.LobbySlot;
+import forge.gamemodes.match.LobbySlotType;
 import forge.gamemodes.net.GameProtocolHandler;
 import forge.gamemodes.net.IRemote;
 import forge.gamemodes.net.ProtocolMethod;
@@ -16,6 +17,7 @@ import forge.interfaces.ILobbyListener;
 import forge.util.BuildInfo;
 import forge.localinstance.properties.ForgePreferences.FPref;
 import forge.model.FModel;
+import forge.player.GamePlayerUtil;
 import forge.player.LobbyPlayerHuman;
 import forge.player.PlayerZoneUpdate;
 import forge.player.PlayerZoneUpdates;
@@ -218,24 +220,36 @@ final class GameClientHandler extends GameProtocolHandler<IGuiGame> {
                     null,
                     null
             );
-            LobbyPlayer lobbyPlayer = new LobbyPlayerHuman(
-                    playerSlot.getName(),
-                    playerSlot.getAvatarIndex(),
-                    playerSlot.getSleeveIndex()
-            );
+
+            // Create the appropriate type of player based on the slot type
+            LobbyPlayer lobbyPlayer;
+            if (playerSlot.getType() == LobbySlotType.AI) {
+                // Create AI player using GamePlayerUtil which properly handles all initialization
+                lobbyPlayer = GamePlayerUtil.createAiPlayer(
+                        playerSlot.getName(),
+                        playerSlot.getAvatarIndex(),
+                        playerSlot.getSleeveIndex(),
+                        playerSlot.getAiOptions(),
+                        playerSlot.getAiProfile()
+                );
+            } else {
+                // Create human player (LOCAL or REMOTE)
+                lobbyPlayer = new LobbyPlayerHuman(
+                        playerSlot.getName(),
+                        playerSlot.getAvatarIndex(),
+                        playerSlot.getSleeveIndex()
+                );
+            }
+
             player.setPlayer(lobbyPlayer);
             player.setTeamNumber(playerSlot.getTeam());
             players.add(player);
         }
 
-        final List<RegisteredPlayer> sortedPlayers = Lists.newArrayList(players);
-        sortedPlayers.sort((p1, p2) -> {
-            final int v1 = p1.getPlayer() instanceof LobbyPlayerHuman ? 0 : 1;
-            final int v2 = p2.getPlayer() instanceof LobbyPlayerHuman ? 0 : 1;
-            return Integer.compare(v1, v2);
-        });
-
-        return sortedPlayers;
+        // IMPORTANT: In multiplayer games, player order must match the server's order exactly.
+        // Do NOT sort the players - the indices (0, 1, 2, ...) are critical to game logic.
+        // The server maintains the correct order, and we must preserve it on the client.
+        return players;
     }
 
     /**

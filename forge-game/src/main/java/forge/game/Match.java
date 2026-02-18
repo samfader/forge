@@ -85,7 +85,7 @@ public class Match {
                 game.getAction().moveTo(ZoneType.Ante, kv.getValue(), null, AbilityKey.newMap());
                 game.getGameLog().add(GameLogEntryType.ANTE, p + " anted " + kv.getValue());
             }
-            game.fireEvent(GameEventAnteCardsSelected.fromCards(list));
+            game.fireEvent(new GameEventAnteCardsSelected(list));
         }
 
         game.getAction().startGame(this.lastOutcome, startGameHook);

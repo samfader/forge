@@ -2,16 +2,10 @@ package forge.game.event;
 
 import forge.card.CardStateName;
 import forge.game.card.Card;
-import forge.game.card.CardView;
 import forge.game.player.Player;
-import forge.game.player.PlayerView;
 import forge.util.Lang;
 
-public record GameEventDoorChanged(PlayerView activatingPlayer, CardView card, CardStateName state, boolean unlock) implements GameEvent {
-
-    public GameEventDoorChanged(Player activatingPlayer, Card card, CardStateName state, boolean unlock) {
-        this(PlayerView.get(activatingPlayer), CardView.get(card), state, unlock);
-    }
+public record GameEventDoorChanged(Player activatingPlayer, Card card, CardStateName state, boolean unlock) implements GameEvent {
 
     @Override
     public <T> T visit(IGameEventVisitor<T> visitor) {
@@ -20,7 +14,7 @@ public record GameEventDoorChanged(PlayerView activatingPlayer, CardView card, C
 
     @Override
     public String toString() {
-        String doorName = card.getCurrentState().getName();
+        String doorName = card.getState(state).getTranslatedName();
 
         StringBuilder sb = new StringBuilder();
         sb.append(activatingPlayer);

@@ -13,7 +13,6 @@ import forge.game.*;
 import forge.game.event.GameEvent;
 import forge.game.event.GameEventSubgameEnd;
 import forge.game.event.GameEventSubgameStart;
-import forge.game.event.GameEventTurnPhase;
 import forge.game.event.IGameEventVisitor;
 import forge.game.player.Player;
 import forge.game.player.PlayerView;
@@ -178,13 +177,11 @@ public class HostedMatch {
             if (game.getMatch().getOutcomes().isEmpty()) {
                 qc.getCards().resetNewList();
             }
-            qc.setActiveGame(game);
             game.subscribeToEvents(qc); // this one listens to player's mulligans ATM
         }
 
-        // SoundSystem receives GameEvents via handleGameEvent() on each GUI,
-        // so it doesn't need a direct event bus subscription here.
-        // (It still subscribes to the Match bus for UiEvent sounds like blocker assignment.)
+        game.subscribeToEvents(SoundSystem.instance);
+        game.subscribeToEvents(visitor);
 
         final FCollectionView<Player> players = game.getPlayers();
         final String[] avatarIndices = FModel.getPreferences().getPref(FPref.UI_AVATARS).split(",");
@@ -225,11 +222,7 @@ public class HostedMatch {
                 gui.setGameView(gameView);
                 gui.setOriginalGameController(p.getView(), humanController);
 
-                if (gui instanceof forge.gamemodes.net.server.NetGuiGame) {
-                    game.subscribeToEvents(new forge.gui.control.GameEventForwarder(gui));
-                } else {
-                    game.subscribeToEvents(new FControlGameEventHandler(humanController));
-                }
+                game.subscribeToEvents(new FControlGameEventHandler(humanController));
                 playersPerGui.put(gui, p.getView());
 
                 if (gameControllers != null ) {
@@ -402,6 +395,8 @@ public class HostedMatch {
         @Override
         public Void visit(final GameEventSubgameStart event) {
             subGameCount++;
+            event.subgame().subscribeToEvents(SoundSystem.instance);
+            event.subgame().subscribeToEvents(visitor);
 
             final GameView gameView = event.subgame().getView();
 
@@ -449,8 +444,7 @@ public class HostedMatch {
                         gui.openView(new TrackableCollection<>(p.getView()));
                         gui.setGameView(null);
                         gui.setGameView(gameView);
-                        gui.handleGameEvent(new GameEventTurnPhase(
-                                gameView.getPlayerTurn(), gameView.getPhase(), ""));
+                        gui.updatePhase(true);
                         gui.message(event.message());
                     }
                 }

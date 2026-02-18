@@ -2,15 +2,10 @@ package forge.game.event;
 
 import forge.game.phase.PhaseType;
 import forge.game.player.Player;
-import forge.game.player.PlayerView;
 import forge.util.Lang;
 import forge.util.TextUtil;
 
-public record GameEventTurnPhase(PlayerView playerTurn, PhaseType phase, String phaseDesc) implements GameEvent {
-
-    public GameEventTurnPhase(Player playerTurn, PhaseType phase, String phaseDesc) {
-        this(PlayerView.get(playerTurn), phase, phaseDesc);
-    }
+public record GameEventTurnPhase(Player playerTurn, PhaseType phase, String phaseDesc) implements GameEvent {
 
     @Override
     public <T> T visit(IGameEventVisitor<T> visitor) {
