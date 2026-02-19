@@ -80,7 +80,7 @@ public class PlayerPanel extends FPanel {
 
     // AI picker
     private String aiProfile;
-    private final FLabel aiPickerLabel = new FLabel.Builder().text(localizer.getMessage("lblAiPickerPanel") + ":").build();
+    private final FLabel aiPickerLabel = new FLabel.Builder().text(localizer.getMessageorUseDefault("lblAiPickerPanel", "AI") + ":").build();
     private FComboBoxWrapper<Object> aiPickerComboBox = new FComboBoxWrapper<>();
 
     private final FComboBoxWrapper<Object> teamComboBox = new FComboBoxWrapper<>();

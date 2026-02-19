@@ -21,12 +21,12 @@ public final class AudioMenu {
 
     public JMenu getMenu() {
         final Localizer localizer = Localizer.getInstance();
-        final JMenu menu = new JMenu(localizer.getMessage("lblAudio"));
+        final JMenu menu = new JMenu(localizer.getMessageorUseDefault("lblAudio", "Audio"));
         menu.setMnemonic(KeyEvent.VK_A);
         int soundsVol = prefs.getPrefBoolean(FPref.UI_ENABLE_SOUNDS) ? prefs.getPrefInt(FPref.UI_VOL_SOUNDS) : 0;
         int musicVol = prefs.getPrefBoolean(FPref.UI_ENABLE_MUSIC) ? prefs.getPrefInt(FPref.UI_VOL_MUSIC) : 0;
         menu.add(buildSliderPanel(
-                localizer.getMessage("cbAdjustSoundsVolume"),
+                localizer.getMessageorUseDefault("cbAdjustSoundsVolume", "Adjust Sound Volume"),
                 soundsVol,
                 value -> {
                     prefs.setPref(FPref.UI_VOL_SOUNDS, String.valueOf(value));
@@ -34,7 +34,7 @@ public final class AudioMenu {
                     prefs.save();
                 }));
         menu.add(buildSliderPanel(
-                localizer.getMessage("cbAdjustMusicVolume"),
+                localizer.getMessageorUseDefault("cbAdjustMusicVolume", "Adjust Music Volume"),
                 musicVol,
                 value -> {
                     prefs.setPref(FPref.UI_VOL_MUSIC, String.valueOf(value));

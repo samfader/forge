@@ -47,7 +47,7 @@ public class FNavigationBar extends FTitleBarBase {
     private static final int revealDelay = 150;
     private static final int initialHideDelay = 500;
 
-    private final FButton btnForge = new FButton("Forge");
+    private final FButton btnForge = new FButton("CORNMANDER");
     private final List<NavigationTab> tabs = Lists.newArrayList();
     private final FDigitalClock clock = new FDigitalClock();
     private final JPanel pnlReveal = new JPanel();

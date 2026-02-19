@@ -174,8 +174,8 @@ public final class LayoutMenu {
         final Localizer localizer = Localizer.getInstance();
         final boolean enabled = !"OFF".equals(prefs.getPref(FPref.UI_MULTIPLAYER_FIELD_LAYOUT));
         final JCheckBoxMenuItem menuItem = createStayOpenCheckBox(
-                localizer.getMessage("lblSortMultiplayerFields"));
-        menuItem.setToolTipText(localizer.getMessage("lblSortMultiplayerFieldsTooltip"));
+                localizer.getMessageorUseDefault("lblSortMultiplayerFields", "Auto Sort Multiplayer Fields"));
+        menuItem.setToolTipText(localizer.getMessageorUseDefault("lblSortMultiplayerFieldsTooltip", "Automatically reorder player fields by turn order in 3+ player games."));
         menuItem.setState(enabled);
         layoutMenu.setEnabled(enabled);
         panelsMenu.setEnabled(enabled);
@@ -192,18 +192,23 @@ public final class LayoutMenu {
 
     private static JMenu getMenu_MultiplayerFieldLayout() {
         final Localizer localizer = Localizer.getInstance();
-        final JMenu menu = new JMenu(localizer.getMessage("lblMultiplayerFieldLayout"));
+        final JMenu menu = new JMenu(localizer.getMessageorUseDefault("lblMultiplayerFieldLayout", "Multiplayer Field Layout"));
         final ButtonGroup group = new ButtonGroup();
         final String current = prefs.getPref(FPref.UI_MULTIPLAYER_FIELD_LAYOUT);
 
         final String[] values = {"GRID", "ROWS"};
         final String[] labelKeys = {"lblFieldLayoutGrid", "lblFieldLayoutRows"};
+        final String[] labelDefaults = {"Grid", "Rows"};
         final String[] tooltipKeys = {"lblFieldLayoutGridTooltip", "lblFieldLayoutRowsTooltip"};
+        final String[] tooltipDefaults = {
+            "Turn order flows counterclockwise through a grid (bottom-left, top-left, top-right, bottom-right).",
+            "Local player on bottom, all opponents on top in turn order."
+        };
 
         for (int i = 0; i < values.length; i++) {
             final JRadioButtonMenuItem item = createStayOpenRadioButton(
-                    localizer.getMessage(labelKeys[i]));
-            item.setToolTipText(localizer.getMessage(tooltipKeys[i]));
+                    localizer.getMessageorUseDefault(labelKeys[i], labelDefaults[i]));
+            item.setToolTipText(localizer.getMessageorUseDefault(tooltipKeys[i], tooltipDefaults[i]));
             item.setSelected(values[i].equals(current));
             final String value = values[i];
             item.addActionListener(e -> {
@@ -219,18 +224,23 @@ public final class LayoutMenu {
 
     private static JMenu getMenu_MultiplayerFieldPanels() {
         final Localizer localizer = Localizer.getInstance();
-        final JMenu menu = new JMenu(localizer.getMessage("lblMultiplayerFieldPanels"));
+        final JMenu menu = new JMenu(localizer.getMessageorUseDefault("lblMultiplayerFieldPanels", "Multiplayer Panel Style"));
         final ButtonGroup group = new ButtonGroup();
         final String current = prefs.getPref(FPref.UI_MULTIPLAYER_FIELD_PANELS);
 
         final String[] values = {"TABBED", "SPLIT"};
         final String[] labelKeys = {"lblFieldPanelsTabbed", "lblFieldPanelsSplit"};
+        final String[] labelDefaults = {"Tabbed", "Split"};
         final String[] tooltipKeys = {"lblFieldPanelsTabbedTooltip", "lblFieldPanelsSplitTooltip"};
+        final String[] tooltipDefaults = {
+            "Multiple players in the same row share a panel and appear as tabs.",
+            "Each player gets their own visible panel, shown side by side."
+        };
 
         for (int i = 0; i < values.length; i++) {
             final JRadioButtonMenuItem item = createStayOpenRadioButton(
-                    localizer.getMessage(labelKeys[i]));
-            item.setToolTipText(localizer.getMessage(tooltipKeys[i]));
+                    localizer.getMessageorUseDefault(labelKeys[i], labelDefaults[i]));
+            item.setToolTipText(localizer.getMessageorUseDefault(tooltipKeys[i], tooltipDefaults[i]));
             item.setSelected(values[i].equals(current));
             final String value = values[i];
             item.addActionListener(e -> {

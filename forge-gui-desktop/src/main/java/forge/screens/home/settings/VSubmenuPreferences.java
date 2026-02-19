@@ -119,7 +119,7 @@ public enum VSubmenuPreferences implements IVSubmenu<CSubmenuPreferences> {
     private final JCheckBox cbEnableNonLegalCards = new OptionsCheckBox(localizer.getMessage("lblEnableNonLegalCards"));
     private final JCheckBox cbAllowCustomCardsDeckConformance = new OptionsCheckBox(localizer.getMessage("lblAllowCustomCardsInDecks"));
     private final JCheckBox cbUseExperimentalNetworkStream = new OptionsCheckBox(localizer.getMessage("lblExperimentalNetworkCompatibility"));
-    private final JCheckBox cbAiPicker = new OptionsCheckBox(localizer.getMessage("lblAiPickerSettings"));
+    private final JCheckBox cbAiPicker = new OptionsCheckBox(localizer.getMessageorUseDefault("lblAiPickerSettings", "Experimental AI Picker"));
     private final JCheckBox cbCardArtCoreExpansionsOnlyOpt = new OptionsCheckBox(localizer.getMessage("lblPrefArtExpansionOnly"));
     private final JCheckBox cbSmartCardArtSelectionOpt = new OptionsCheckBox(localizer.getMessage("lblSmartCardArtOpt"));
     private final JCheckBox cbShowDraftRanking = new OptionsCheckBox(localizer.getMessage("lblShowDraftRankingOverlay"));
@@ -129,7 +129,7 @@ public enum VSubmenuPreferences implements IVSubmenu<CSubmenuPreferences> {
 
     // Search functionality
     private final FTextField txtSearch = new FTextField.Builder()
-            .ghostText(localizer.getMessage("lblSearchPreferences"))
+            .ghostText(localizer.getMessageorUseDefault("lblSearchPreferences", "Type to filter preferences..."))
             .build();
     private final List<Section> sections = new ArrayList<>();
     private Timer searchTimer;
@@ -374,7 +374,7 @@ public enum VSubmenuPreferences implements IVSubmenu<CSubmenuPreferences> {
         pnlPrefs.add(new NoteLabel(localizer.getMessage("nlExperimentalNetworkCompatibility")), descriptionConstraints);
 
         pnlPrefs.add(cbAiPicker, titleConstraints);
-        pnlPrefs.add(new NoteLabel(localizer.getMessage("nlAiPickerSettings")), descriptionConstraints);
+        pnlPrefs.add(new NoteLabel(localizer.getMessageorUseDefault("nlAiPickerSettings", "Enable the experimental AI Picker in the lobby of new games. (REQUIRES RESTART)")), descriptionConstraints);
 
         // Graphic Options
         pnlPrefs.add(new SectionLabel(localizer.getMessage("GraphicOptions")), sectionConstraints + ", gaptop 2%");
@@ -1114,7 +1114,7 @@ public enum VSubmenuPreferences implements IVSubmenu<CSubmenuPreferences> {
     private JPanel getSearchPanel() {
         JPanel p = new JPanel(new MigLayout("insets 0, gap 0!, fillx"));
         p.setOpaque(false);
-        FLabel lbl = new FLabel.Builder().text(localizer.getMessage("lblSearchPreferencesLabel") + " ").fontSize(12).fontStyle(Font.BOLD).build();
+        FLabel lbl = new FLabel.Builder().text(localizer.getMessageorUseDefault("lblSearchPreferencesLabel", "Search:") + " ").fontSize(12).fontStyle(Font.BOLD).build();
         p.add(lbl, "aligny center, h 100%, gap 4px 0 0 0");
         p.add(txtSearch, "aligny center, h 100%, growx, pushx");
         return p;
